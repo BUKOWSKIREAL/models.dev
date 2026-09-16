@@ -447,6 +447,10 @@ const FLAT_PRICING_KEYS: Record<string, "input" | "output" | "cache_read" | "cac
   "Cached input tokens (per 1M)": "cache_read",
   "Cache creation tokens (per 1M)": "cache_write",
 };
+// Catalog sometimes includes non-rate metadata (threshold size in tokens), not USD/MTok.
+const IGNORED_PRICING_KEYS = new Set([
+  "Long-context threshold (input tokens)",
+]);
 const TIERED_PRICING_KEY = /^(Input|Output|Cached input)\s*(<=?|>=?)\s*(\d+)k\s*\(per 1M\)$/;
 const TIERED_PRICING_FIELDS = {
   Input: "input",
@@ -457,6 +461,7 @@ const TIERED_PRICING_FIELDS = {
 function proxiedCost(pricing: Record<string, number>, id: string): NonNullable<SyncedBaseModel["cost"]> {
   const cost: NonNullable<SyncedBaseModel["cost"]> = {};
   for (const [key, value] of Object.entries(pricing)) {
+    if (IGNORED_PRICING_KEYS.has(key)) continue;
     const flatField = FLAT_PRICING_KEYS[key];
     if (flatField !== undefined) {
       cost[flatField] = value;

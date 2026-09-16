@@ -136,13 +136,21 @@ function catalogModalities(values: string[], fallback: Modality[]): Modality[] {
   return modalities.length === 0 ? fallback : modalities;
 }
 
-function pricing(model: Pick<FireworksModel, "pricing">, existing: NonNullable<SyncedFullModel["cost"]>) {
+function pricing(
+  model: Pick<FireworksModel, "pricing">,
+  existing?: NonNullable<SyncedFullModel["cost"]>,
+): NonNullable<SyncedFullModel["cost"]> {
   const bySku = new Map(model.pricing.map((price) => [price.sku, Number(price.amount)]));
+  const input = bySku.get("LLM input tokens (uncached)") ?? existing?.input;
+  const output = bySku.get("LLM output tokens") ?? existing?.output;
+  if (input === undefined || output === undefined) {
+    throw new Error("Fireworks AI pricing requires input and output token rates");
+  }
   return {
     ...existing,
-    input: bySku.get("LLM input tokens (uncached)") ?? existing.input,
-    cache_read: bySku.get("LLM input tokens (cached)") ?? existing.cache_read,
-    output: bySku.get("LLM output tokens") ?? existing.output,
+    input,
+    cache_read: bySku.get("LLM input tokens (cached)") ?? existing?.cache_read,
+    output,
   };
 }
 
@@ -204,7 +212,6 @@ export function buildFireworksModel(
   const openWeights = existing.open_weights;
   const limit = existing.limit;
   const modalities = existing.modalities;
-  const cost = existing.cost;
 
   if (
     name === undefined
@@ -218,8 +225,16 @@ export function buildFireworksModel(
     || limit.context === undefined
     || limit.output === undefined
     || modalities === undefined
-    || cost === undefined
   ) {
+    throw new Error(`Fireworks AI model ${model.catalogId} has incomplete local TOML metadata required for sync`);
+  }
+
+  // Serverless rates are authoritative. Local [cost] is optional so a model that
+  // was previously on-demand-only can pick up prices once Fireworks lists them.
+  let cost: NonNullable<SyncedFullModel["cost"]>;
+  try {
+    cost = pricing(model, existing.cost);
+  } catch {
     throw new Error(`Fireworks AI model ${model.catalogId} has incomplete local TOML metadata required for sync`);
   }
 
@@ -248,7 +263,7 @@ export function buildFireworksModel(
     open_weights: openWeights,
     status: existing.status,
     interleaved: existing.interleaved,
-    cost: pricing(model, cost),
+    cost,
     limit: {
       context,
       input: limit.input,

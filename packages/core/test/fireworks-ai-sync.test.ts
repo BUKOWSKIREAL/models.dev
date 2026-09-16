@@ -88,6 +88,13 @@ test("updates Fireworks pricing and modalities while preserving authored facts",
   });
 });
 
+test("derives Fireworks cost from the serverless catalog when local cost is absent", () => {
+  const { cost: _cost, ...withoutCost } = existingModel();
+  const model = buildFireworksModel(catalogModel(), withoutCost);
+
+  expect(model.cost).toEqual({ input: 1.4, output: 4.4, cache_read: 0.14 });
+});
+
 test("uses the service-tier recipe for a priority-only model", () => {
   const priority = fireworksModel({ serverless_mode: "priority", service_tier: "priority" });
   const [model] = expandFireworksModels([priority]);

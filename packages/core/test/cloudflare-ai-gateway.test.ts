@@ -70,6 +70,28 @@ test("builds Cloudflare AI Gateway overrides from catalog metadata", () => {
   });
 });
 
+test("ignores long-context threshold metadata in Cloudflare pricing", () => {
+  const model = buildCloudflareAiGatewayModel(
+    {
+      model_id: "openai/gpt-6-astra",
+      task: "Text Generation",
+      context_length: 1_050_000,
+      pricing: {
+        "Input tokens (per 1M)": 10,
+        "Output tokens (per 1M)": 50,
+        "Cached input tokens (per 1M)": 1,
+        "Long-context threshold (input tokens)": 272_000,
+      },
+    },
+    undefined,
+    {
+      reasoning_options: [{ type: "effort", values: ["low", "medium", "high", "xhigh", "max"] }],
+    },
+  );
+
+  expect(model.cost).toEqual({ input: 10, output: 50, cache_read: 1 });
+});
+
 test("derives nested Cloudflare reasoning controls", () => {
   expect(deriveReasoningOptions({
     properties: {
