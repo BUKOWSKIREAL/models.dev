@@ -1,0 +1,32 @@
+# Pricing: OpenRouter https://openrouter.ai/xiaomi/mimo-v2.6-pro (USD/MTok)
+# API: https://platform.xiaomimimo.com/#/docs (accessed 2026-09-22)
+name = "MiMo-V2.6-Pro"
+description = "Stronger MiMo Pro tier for multimodal reasoning and coding-agent execution"
+family = "mimo"
+release_date = "2026-09-22"
+last_updated = "2026-09-22"
+attachment = true
+reasoning = true
+temperature = true
+tool_call = true
+knowledge = "2026-09-22"
+open_weights = false
+
+[[reasoning_options]]
+type = "toggle"
+
+[cost]
+input = 0.435
+output = 0.87
+cache_read = 0.0036
+
+[limit]
+context = 1_048_576
+output = 131_072
+
+[modalities]
+input = ["text", "image", "audio", "video", "pdf"]
+output = ["text"]
+
+[interleaved]
+field = "reasoning_content"
